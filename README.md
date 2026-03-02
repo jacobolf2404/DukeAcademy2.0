@@ -176,7 +176,7 @@ Core tables: `users`, `courses`, `enrollments`, `assignments`, `submissions`
 ## Team
 
 - **Jacobo Lopez Fernandez** — jl1331@duke.edu
-- **[Teammate Name]** — [netid]@duke.edu
+- **Shepard Seinfeld** — ss1556@duke.edu
 
 ## License
 
