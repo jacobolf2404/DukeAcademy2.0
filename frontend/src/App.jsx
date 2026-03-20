@@ -21,26 +21,15 @@ export default function App() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          color: "var(--gray-500)",
-        }}
-      >
-        Loading...
+      <div className="loading-screen">
+        <div className="spinner" />
+        <span>Loading DukeAcademy...</span>
       </div>
     );
   }
 
   if (!user) {
-    return (
-      <div className="app-container">
-        <LoginPage setUser={setUser} />
-      </div>
-    );
+    return <LoginPage setUser={setUser} />;
   }
 
   return (
@@ -61,6 +50,9 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
+      <footer className="footer">
+        Duke University &middot; CompSci 316 &middot; DukeAcademy 2.0
+      </footer>
     </div>
   );
 }

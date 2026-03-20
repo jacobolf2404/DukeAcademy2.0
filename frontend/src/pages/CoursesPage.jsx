@@ -7,6 +7,7 @@ export default function CoursesPage({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", description: "" });
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     loadCourses();
@@ -33,10 +34,22 @@ export default function CoursesPage({ user }) {
     }
   };
 
+  const filtered = courses.filter(
+    (c) =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.description?.toLowerCase().includes(search.toLowerCase()) ||
+      c.teacher?.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div>
       <div className="page-header">
-        <h1>Course Catalog</h1>
+        <div>
+          <h1>Course Catalog</h1>
+          <p className="page-subtitle">
+            {courses.length} course{courses.length !== 1 ? "s" : ""} available
+          </p>
+        </div>
         {(user.role === "teacher" || user.role === "admin") && (
           <button
             className="btn btn-primary"
@@ -51,6 +64,7 @@ export default function CoursesPage({ user }) {
 
       {showForm && (
         <div className="card" style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ marginBottom: "1rem" }}>Create a New Course</h3>
           <form onSubmit={handleCreate}>
             <div className="form-group">
               <label>Course Title</label>
@@ -68,7 +82,7 @@ export default function CoursesPage({ user }) {
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
-                placeholder="Course description..."
+                placeholder="Describe what students will learn in this course..."
                 rows={3}
               />
             </div>
@@ -79,25 +93,52 @@ export default function CoursesPage({ user }) {
         </div>
       )}
 
-      {courses.length === 0 ? (
+      {courses.length > 3 && (
+        <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+          <input
+            type="text"
+            placeholder="Search courses by title, description, or instructor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: "480px" }}
+          />
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <div className="empty-state">
-          <h3>No courses yet</h3>
-          <p>Courses will appear here once created.</p>
+          <div className="empty-state-icon">📚</div>
+          <h3>{search ? "No matching courses" : "No courses yet"}</h3>
+          <p>
+            {search
+              ? "Try a different search term."
+              : "Courses will appear here once created."}
+          </p>
         </div>
       ) : (
         <div className="card-grid">
-          {courses.map((c) => (
+          {filtered.map((c) => (
             <Link
               to={`/courses/${c.id}`}
               key={c.id}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <div className="card" style={{ cursor: "pointer" }}>
+              <div className="card card-hover course-card-accent">
                 <h3>{c.title}</h3>
-                <p>{c.description?.slice(0, 120)}...</p>
+                <p>
+                  {c.description
+                    ? c.description.length > 120
+                      ? c.description.slice(0, 120) + "..."
+                      : c.description
+                    : "No description provided."}
+                </p>
                 <div className="card-meta">
-                  <span>Instructor: {c.teacher?.name || "TBD"}</span>
-                  <span>{c.enrollment_count} enrolled</span>
+                  <span className="card-meta-item">
+                    👤 {c.teacher?.name || "TBD"}
+                  </span>
+                  <span className="card-meta-item">
+                    🎓 {c.enrollment_count} enrolled
+                  </span>
                 </div>
               </div>
             </Link>
