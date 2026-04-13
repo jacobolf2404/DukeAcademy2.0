@@ -54,7 +54,7 @@ export default function LoginPage({ setUser }) {
 
           <div className="form-group">
             <label>Password</label>
-            <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Enter your password" required minLength={3} />
+            <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Enter your password" required minLength={6} pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" />
           </div>
 
           {isRegister && (

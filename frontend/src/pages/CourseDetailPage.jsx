@@ -3,12 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getCourse, getAssignments, createAssignment, deleteAssignment,
   enroll, drop, getRoster, submitWork, getSubmissions, gradeSubmission,
-  getCourseStats, getMyCourses,
+  getCourseStats, getMyCourses, getAnnouncements, createAnnouncement, deleteAnnouncement, exportGradesUrl,
 } from "../api";
-import { getAnnouncements, createAnnouncement, deleteAnnouncement, exportGradesUrl } from "../api";
 import SubmitModal from "../components/SubmitModal";
 import SubmissionViewer from "../components/SubmissionViewer";
-import { getAnnouncements, createAnnouncement, deleteAnnouncement, exportGradesUrl } from "../api";
 
 export default function CourseDetailPage({ user }) {
   const { id } = useParams();
