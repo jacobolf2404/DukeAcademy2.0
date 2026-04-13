@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { getMe } from "./api";
 import Navbar from "./components/Navbar";
+import ChatBot from "./components/ChatBot";
 import LoginPage from "./pages/LoginPage";
 import CoursesPage from "./pages/CoursesPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
@@ -22,9 +23,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", color: "var(--gray-500)", flexDirection: "column", gap: "0.5rem" }}>
-        <div style={{ fontSize: "2rem" }}>&#128218;</div>
-        <div>Loading DukeAcademy 2.0...</div>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", color: "var(--gray-500)", flexDirection: "column", gap: "0.75rem" }}>
+        <div className="loading-spinner" />
+        <div style={{ fontWeight: 500 }}>Loading DukeAcademy 2.0...</div>
       </div>
     );
   }
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
+      <ChatBot user={user} />
     </div>
   );
 }
