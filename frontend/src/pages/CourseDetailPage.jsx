@@ -6,6 +6,7 @@ import {
   getCourseStats, getMyCourses,
 } from "../api";
 import SubmitModal from "../components/SubmitModal";
+import SubmissionViewer from "../components/SubmissionViewer";
 
 export default function CourseDetailPage({ user }) {
   const { id } = useParams();
@@ -77,23 +78,25 @@ export default function CourseDetailPage({ user }) {
     try {
       await submitWork(submitModalAssignment.id, content);
       setSubmitModalAssignment(null);
-      flash("Submitted successfully!");
+      flash("Submitted successfully! Your teacher will review and grade it.");
       loadAssignments();
     } catch (err) { flash(err.response?.data?.error || "Submission failed", "error"); }
   };
 
   const loadSubmissions = async (aid) => {
     setSelectedAssignment(aid);
+    setExpandedSubmission(null);
     try { setSubmissions((await getSubmissions(aid)).data); setGradeEdits({}); } catch {}
   };
 
   const handleGrade = async (subId) => {
     const edit = gradeEdits[subId];
-    if (!edit) return;
+    if (!edit || edit.grade === "") return;
     try {
-      await gradeSubmission(subId, edit.grade, edit.feedback);
+      await gradeSubmission(subId, parseFloat(edit.grade), edit.feedback || "");
       flash("Grade saved!");
       loadSubmissions(selectedAssignment);
+      loadStats();
     } catch (err) { flash(err.response?.data?.error || "Grading failed", "error"); }
   };
 
@@ -139,9 +142,7 @@ export default function CourseDetailPage({ user }) {
         </button>
         {isTeacher && (
           <>
-            <button className={`tab ${tab === "roster" ? "active" : ""}`} onClick={() => setTab("roster")}>
-              Roster<span className="tab-badge">{roster.length}</span>
-            </button>
+            <button className={`tab ${tab === "roster" ? "active" : ""}`} onClick={() => setTab("roster")}>Roster<span className="tab-badge">{roster.length}</span></button>
             <button className={`tab ${tab === "grading" ? "active" : ""}`} onClick={() => setTab("grading")}>Grading</button>
             <button className={`tab ${tab === "stats" ? "active" : ""}`} onClick={() => setTab("stats")}>Analytics</button>
           </>
@@ -158,19 +159,12 @@ export default function CourseDetailPage({ user }) {
               </button>
             </div>
           )}
-
           {showForm && (
             <div className="card" style={{ marginBottom: "1rem" }}>
               <h3 style={{ marginBottom: "1rem", fontSize: "1rem" }}>Create Assignment</h3>
               <form onSubmit={handleCreateAssignment}>
-                <div className="form-group">
-                  <label>Title</label>
-                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Homework 4: Normalization" required />
-                </div>
-                <div className="form-group">
-                  <label>Instructions</label>
-                  <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} placeholder="Detailed instructions for students..." />
-                </div>
+                <div className="form-group"><label>Title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Homework 4: Normalization" required /></div>
+                <div className="form-group"><label>Instructions</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} placeholder="Detailed instructions for students..." /></div>
                 <div className="form-row">
                   <div className="form-group"><label>Due Date</label><input type="datetime-local" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
                   <div className="form-group"><label>Max Points</label><input type="number" value={form.max_points} onChange={(e) => setForm({ ...form, max_points: e.target.value })} /></div>
@@ -179,7 +173,6 @@ export default function CourseDetailPage({ user }) {
               </form>
             </div>
           )}
-
           {assignments.length === 0 ? (
             <div className="empty-state"><div className="empty-icon">&#128203;</div><h3>No assignments yet</h3></div>
           ) : (
@@ -189,23 +182,12 @@ export default function CourseDetailPage({ user }) {
                 <tbody>
                   {assignments.map((a) => (
                     <tr key={a.id}>
-                      <td>
-                        <strong>{a.title}</strong>
-                        {a.description && <div style={{ fontSize: "0.8rem", color: "var(--gray-500)", marginTop: "0.2rem" }}>{a.description.slice(0, 80)}{a.description.length > 80 ? "..." : ""}</div>}
-                      </td>
-                      <td>
-                        {a.due_date ? (
-                          <span>{new Date(a.due_date).toLocaleDateString()}
-                            {getDueStatus(a.due_date) === "overdue" && <span className="badge badge-overdue" style={{ marginLeft: "0.5rem" }}>Past Due</span>}
-                          </span>
-                        ) : "—"}
-                      </td>
+                      <td><strong>{a.title}</strong>{a.description && <div style={{ fontSize: "0.8rem", color: "var(--gray-500)", marginTop: "0.2rem" }}>{a.description.slice(0, 80)}{a.description.length > 80 ? "..." : ""}</div>}</td>
+                      <td>{a.due_date ? (<span>{new Date(a.due_date).toLocaleDateString()}{getDueStatus(a.due_date) === "overdue" && <span className="badge badge-overdue" style={{ marginLeft: "0.5rem" }}>Past Due</span>}</span>) : "—"}</td>
                       <td>{a.max_points}</td>
                       <td>{a.submission_count}</td>
                       <td style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                        {user.role === "student" && enrolled && (
-                          <button className="btn btn-primary btn-sm" onClick={() => setSubmitModalAssignment(a)}>&#128206; Submit</button>
-                        )}
+                        {user.role === "student" && enrolled && <button className="btn btn-primary btn-sm" onClick={() => setSubmitModalAssignment(a)}>&#128206; Submit</button>}
                         {isTeacher && (
                           <>
                             <button className="btn btn-ghost btn-sm" onClick={() => { setTab("grading"); loadSubmissions(a.id); }}>Grade</button>
@@ -225,17 +207,11 @@ export default function CourseDetailPage({ user }) {
       {/* ── Roster Tab ── */}
       {tab === "roster" && isTeacher && (
         <div className="card">
-          {roster.length === 0 ? (
-            <div className="empty-state"><h3>No students enrolled yet</h3></div>
-          ) : (
+          {roster.length === 0 ? <div className="empty-state"><h3>No students enrolled yet</h3></div> : (
             <div className="table-wrapper" style={{ border: "none" }}>
               <table>
                 <thead><tr><th>Name</th><th>Email</th><th>Enrolled</th></tr></thead>
-                <tbody>
-                  {roster.map((s) => (
-                    <tr key={s.id}><td><strong>{s.name}</strong></td><td>{s.email}</td><td>{new Date(s.enrolled_at).toLocaleDateString()}</td></tr>
-                  ))}
-                </tbody>
+                <tbody>{roster.map((s) => (<tr key={s.id}><td><strong>{s.name}</strong></td><td>{s.email}</td><td>{new Date(s.enrolled_at).toLocaleDateString()}</td></tr>))}</tbody>
               </table>
             </div>
           )}
@@ -247,7 +223,7 @@ export default function CourseDetailPage({ user }) {
         <div>
           {!selectedAssignment ? (
             <div>
-              <p style={{ color: "var(--gray-500)", marginBottom: "1rem" }}>Select an assignment to review and grade submissions:</p>
+              <p style={{ color: "var(--gray-500)", marginBottom: "1rem" }}>Select an assignment to review and grade:</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {assignments.map((a) => (
                   <div key={a.id} className="card card-clickable" onClick={() => loadSubmissions(a.id)} style={{ padding: "1rem" }}>
@@ -268,16 +244,16 @@ export default function CourseDetailPage({ user }) {
                 <button className="btn btn-outline btn-sm" onClick={() => { setSelectedAssignment(null); setSubmissions([]); setExpandedSubmission(null); }}>&#8592; Back</button>
                 <div>
                   <h3 style={{ fontSize: "1rem" }}>{assignments.find((a) => a.id === selectedAssignment)?.title}</h3>
-                  <span style={{ fontSize: "0.8rem", color: "var(--gray-500)" }}>{submissions.length} submission{submissions.length !== 1 ? "s" : ""}</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--gray-500)" }}>{submissions.length} submission{submissions.length !== 1 ? "s" : ""} &middot; Max {assignments.find((a) => a.id === selectedAssignment)?.max_points} pts</span>
                 </div>
               </div>
 
               {submissions.length === 0 ? (
-                <div className="empty-state"><h3>No submissions yet</h3></div>
+                <div className="empty-state"><h3>No submissions yet</h3><p>Students haven't submitted work for this assignment.</p></div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {submissions.map((s) => {
-                    const edit = gradeEdits[s.id] || { grade: s.grade ?? "", feedback: s.feedback ?? "" };
+                    const edit = gradeEdits[s.id] || { grade: s.grade !== null ? String(s.grade) : "", feedback: s.feedback ?? "" };
                     const isExpanded = expandedSubmission === s.id;
                     return (
                       <div key={s.id} className="card" style={{ padding: "1rem 1.25rem" }}>
@@ -285,35 +261,46 @@ export default function CourseDetailPage({ user }) {
                           onClick={() => setExpandedSubmission(isExpanded ? null : s.id)}>
                           <div>
                             <strong>{s.student?.name}</strong>
-                            <span style={{ marginLeft: "0.75rem", fontSize: "0.8rem", color: "var(--gray-500)" }}>{new Date(s.submitted_at).toLocaleString()}</span>
+                            <span style={{ marginLeft: "0.75rem", fontSize: "0.8rem", color: "var(--gray-500)" }}>{s.student?.email}</span>
+                            <div style={{ fontSize: "0.75rem", color: "var(--gray-400)", marginTop: "0.15rem" }}>Submitted {new Date(s.submitted_at).toLocaleString()}</div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            {s.grade !== null ? <span className="badge badge-graded">Graded: {s.grade}</span> : <span className="badge badge-pending">Ungraded</span>}
+                            {s.grade !== null
+                              ? <span className="badge badge-graded">Graded: {s.grade}/{assignments.find((a) => a.id === selectedAssignment)?.max_points}</span>
+                              : <span className="badge badge-pending">Awaiting Grade</span>}
                             <span style={{ fontSize: "0.8rem", color: "var(--gray-400)" }}>{isExpanded ? "▲" : "▼"}</span>
                           </div>
                         </div>
 
                         {isExpanded && (
                           <div style={{ marginTop: "1rem" }}>
-                            <div style={{ background: "var(--gray-50)", borderRadius: "var(--radius-sm)", padding: "1rem", marginBottom: "1rem", fontSize: "0.88rem", whiteSpace: "pre-wrap", lineHeight: 1.6, fontFamily: "'Courier New', monospace", maxHeight: "300px", overflowY: "auto", border: "1px solid var(--gray-200)" }}>
-                              {s.content || "No content submitted."}
+                            {/* Student's submission with file viewer */}
+                            <div style={{ marginBottom: "1rem" }}>
+                              <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gray-600)", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Student's Submission</div>
+                              <SubmissionViewer content={s.content} />
                             </div>
 
-                            <div className="form-row" style={{ alignItems: "flex-end" }}>
-                              <div className="form-group" style={{ flex: "0 0 100px" }}>
-                                <label>Grade</label>
-                                <input type="number" value={edit.grade} placeholder="—"
-                                  onChange={(e) => setGradeEdits({ ...gradeEdits, [s.id]: { ...edit, grade: e.target.value } })} />
-                              </div>
-                              <div className="form-group" style={{ flex: 1 }}>
-                                <label>Feedback / Comments</label>
-                                <input type="text" value={edit.feedback} placeholder="Great work! Consider improving..."
-                                  onChange={(e) => setGradeEdits({ ...gradeEdits, [s.id]: { ...edit, feedback: e.target.value } })} />
-                              </div>
-                              <div className="form-group" style={{ flex: "0 0 auto" }}>
-                                <button className="btn btn-success" onClick={() => handleGrade(s.id)} disabled={!gradeEdits[s.id]} style={{ marginBottom: "0" }}>
-                                  Save Grade
-                                </button>
+                            {/* Grading controls */}
+                            <div style={{ borderTop: "1px solid var(--gray-200)", paddingTop: "1rem" }}>
+                              <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gray-600)", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Grade &amp; Feedback</div>
+                              <div className="form-row" style={{ alignItems: "flex-end" }}>
+                                <div className="form-group" style={{ flex: "0 0 120px" }}>
+                                  <label>Score (out of {assignments.find((a) => a.id === selectedAssignment)?.max_points})</label>
+                                  <input type="number" value={edit.grade} placeholder="—" min="0"
+                                    max={assignments.find((a) => a.id === selectedAssignment)?.max_points}
+                                    onChange={(e) => setGradeEdits({ ...gradeEdits, [s.id]: { ...edit, grade: e.target.value } })} />
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                  <label>Comments for Student</label>
+                                  <input type="text" value={edit.feedback} placeholder="Great work! Consider improving your normalization approach..."
+                                    onChange={(e) => setGradeEdits({ ...gradeEdits, [s.id]: { ...edit, feedback: e.target.value } })} />
+                                </div>
+                                <div className="form-group" style={{ flex: "0 0 auto" }}>
+                                  <button className="btn btn-success" onClick={() => handleGrade(s.id)}
+                                    disabled={!gradeEdits[s.id] || gradeEdits[s.id].grade === ""}>
+                                    {s.grade !== null ? "Update Grade" : "Save Grade"}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -342,12 +329,11 @@ export default function CourseDetailPage({ user }) {
                 <tbody>
                   {stats.assignments.map((a) => (
                     <tr key={a.assignment_id}>
-                      <td><strong>{a.title}</strong></td>
-                      <td>{a.submission_count}</td>
+                      <td><strong>{a.title}</strong></td><td>{a.submission_count}</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <div style={{ flex: 1, height: "6px", background: "var(--gray-200)", borderRadius: "3px", maxWidth: "100px" }}>
-                            <div style={{ width: `${a.completion_rate}%`, height: "100%", background: a.completion_rate >= 80 ? "var(--success)" : a.completion_rate >= 50 ? "var(--warning)" : "var(--danger)", borderRadius: "3px", transition: "width 0.3s" }} />
+                            <div style={{ width: `${a.completion_rate}%`, height: "100%", background: a.completion_rate >= 80 ? "var(--success)" : a.completion_rate >= 50 ? "var(--warning)" : "var(--danger)", borderRadius: "3px" }} />
                           </div>
                           <span style={{ fontSize: "0.8rem" }}>{a.completion_rate}%</span>
                         </div>

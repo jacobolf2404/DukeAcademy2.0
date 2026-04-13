@@ -2,29 +2,49 @@ import { useState } from "react";
 
 export default function SubmitModal({ assignment, onSubmit, onClose }) {
   const [content, setContent] = useState("");
-  const [fileName, setFileName] = useState("");
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setContent((prev) => prev + (prev ? "\n\n" : "") + `[Attached: ${file.name}]\n\n` + ev.target.result);
-    };
-    if (file.type.startsWith("text/") || file.name.endsWith(".py") || file.name.endsWith(".sql") || file.name.endsWith(".java") || file.name.endsWith(".js") || file.name.endsWith(".json") || file.name.endsWith(".md")) {
+
+    if (file.type.startsWith("text/") || /\.(py|sql|java|js|jsx|json|md|csv|txt|html|css|c|cpp|h)$/i.test(file.name)) {
+      reader.onload = (ev) => {
+        setFiles((prev) => [...prev, { name: file.name, type: "text", data: ev.target.result, size: file.size }]);
+      };
       reader.readAsText(file);
     } else {
-      setContent((prev) => prev + (prev ? "\n\n" : "") + `[Attached file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]`);
+      reader.onload = (ev) => {
+        setFiles((prev) => [...prev, { name: file.name, type: "binary", data: ev.target.result, size: file.size, mime: file.type }]);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
+  const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx));
+
   const handleSubmit = async () => {
-    if (!content.trim()) return;
+    if (!content.trim() && files.length === 0) return;
     setLoading(true);
+
+    // Build submission payload: text + file metadata
+    const attachments = files.map((f) => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      mime: f.mime || "text/plain",
+      data: f.data,
+    }));
+
+    const payload = JSON.stringify({
+      text: content,
+      attachments: attachments,
+    });
+
     try {
-      await onSubmit(content);
+      await onSubmit(payload);
     } finally {
       setLoading(false);
     }
@@ -32,7 +52,7 @@ export default function SubmitModal({ assignment, onSubmit, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: "600px" }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: "620px" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
           <div>
             <h2 style={{ marginBottom: "0.15rem" }}>Submit Assignment</h2>
@@ -53,27 +73,42 @@ export default function SubmitModal({ assignment, onSubmit, onClose }) {
         </div>
 
         <div className="form-group">
-          <label>Your Submission</label>
+          <label>Your Response</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your answer here, paste code, or attach a file below..."
-            rows={10}
-            style={{ fontFamily: content.includes("[Attached") ? "inherit" : "'Inter', monospace", fontSize: "0.88rem", lineHeight: "1.6" }}
+            placeholder="Write your answer here..."
+            rows={8}
+            style={{ fontSize: "0.88rem", lineHeight: "1.6" }}
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+        <div style={{ marginBottom: "1rem" }}>
           <label className="btn btn-outline btn-sm" style={{ cursor: "pointer", marginBottom: 0 }}>
             &#128206; Attach File
-            <input type="file" onChange={handleFileSelect} style={{ display: "none" }} accept=".txt,.py,.sql,.java,.js,.jsx,.json,.md,.csv,.pdf,.docx" />
+            <input type="file" onChange={handleFileSelect} style={{ display: "none" }} />
           </label>
-          {fileName && <span style={{ fontSize: "0.8rem", color: "var(--gray-600)" }}>&#9989; {fileName}</span>}
+          <span style={{ fontSize: "0.75rem", color: "var(--gray-400)", marginLeft: "0.75rem" }}>PDF, code files, text, images</span>
         </div>
+
+        {files.length > 0 && (
+          <div style={{ marginBottom: "1rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            {files.map((f, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--gray-50)", borderRadius: "var(--radius-sm)", padding: "0.5rem 0.75rem", border: "1px solid var(--gray-200)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ fontSize: "1.1rem" }}>{f.type === "text" ? "📄" : "📎"}</span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{f.name}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--gray-400)" }}>({(f.size / 1024).toFixed(1)} KB)</span>
+                </div>
+                <button onClick={() => removeFile(i)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: "0.9rem" }}>&times;</button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="modal-actions">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-success" onClick={handleSubmit} disabled={!content.trim() || loading}>
+          <button className="btn btn-success" onClick={handleSubmit} disabled={(!content.trim() && files.length === 0) || loading}>
             {loading ? "Submitting..." : "Submit Assignment"}
           </button>
         </div>

@@ -36,14 +36,13 @@ def seed():
             s.set_password("student123")
             students.append(s)
 
-        # Default demo student
         demo_student = User(name="Demo Student", email="student@duke.edu", role="student")
         demo_student.set_password("student123")
         students.append(demo_student)
 
-        db.session.add_all([admin, teacher1, teacher2, demo_student] + students)
+        db.session.add_all([admin, teacher1, teacher2] + students)
         db.session.flush()
-        print(f"Created {2 + len(students) + 1} users")
+        print(f"Created {3 + len(students)} users")
 
         # ── Courses ────────────────────────────────────────
         cs316 = Course(
@@ -64,7 +63,7 @@ def seed():
 
         db.session.add_all([cs316, cs310, cs201])
         db.session.flush()
-        print(f"Created 3 courses")
+        print("Created 3 courses")
 
         # ── Enrollments ───────────────────────────────────
         enrollments = []
@@ -82,43 +81,23 @@ def seed():
         # ── Assignments ───────────────────────────────────
         now = datetime.utcnow()
         assignments_316 = [
-            Assignment(
-                course_id=cs316.id,
-                title="Homework 1: ER Diagrams",
-                description="Design an ER diagram for a university database.",
-                due_date=now - timedelta(days=14),
-                max_points=100,
-            ),
-            Assignment(
-                course_id=cs316.id,
-                title="Homework 2: Relational Algebra",
-                description="Translate English queries to relational algebra expressions.",
-                due_date=now - timedelta(days=7),
-                max_points=100,
-            ),
-            Assignment(
-                course_id=cs316.id,
-                title="Homework 3: SQL Queries",
-                description="Write SQL queries on the beer drinker's database.",
-                due_date=now + timedelta(days=7),
-                max_points=100,
-            ),
-            Assignment(
-                course_id=cs316.id,
-                title="Final Project: Milestone 2",
-                description="Submit README.txt, REPORT.pdf, and demonstrate progress.",
-                due_date=now + timedelta(days=21),
-                max_points=200,
-            ),
+            Assignment(course_id=cs316.id, title="Homework 1: ER Diagrams",
+                       description="Design an ER diagram for a university database. Include all entities, relationships, and constraints.",
+                       due_date=now - timedelta(days=14), max_points=100),
+            Assignment(course_id=cs316.id, title="Homework 2: Relational Algebra",
+                       description="Translate the following English queries to relational algebra expressions.",
+                       due_date=now - timedelta(days=7), max_points=100),
+            Assignment(course_id=cs316.id, title="Homework 3: SQL Queries",
+                       description="Write SQL queries on the beer drinker's database. Test on both db0 and db1.",
+                       due_date=now + timedelta(days=7), max_points=100),
+            Assignment(course_id=cs316.id, title="Final Project: Milestone 4",
+                       description="Submit README.txt, REPORT.pdf, CODE.zip, and a demo video link.",
+                       due_date=now + timedelta(days=21), max_points=200),
         ]
         assignments_310 = [
-            Assignment(
-                course_id=cs310.id,
-                title="Lab 1: Process Scheduling",
-                description="Implement FIFO and Round Robin schedulers.",
-                due_date=now - timedelta(days=10),
-                max_points=100,
-            ),
+            Assignment(course_id=cs310.id, title="Lab 1: Process Scheduling",
+                       description="Implement FIFO and Round Robin schedulers in C.",
+                       due_date=now - timedelta(days=10), max_points=100),
         ]
 
         all_assignments = assignments_316 + assignments_310
@@ -126,35 +105,51 @@ def seed():
         db.session.flush()
         print(f"Created {len(all_assignments)} assignments")
 
-        # ── Submissions ───────────────────────────────────
+        # ── Submissions (some graded, some pending) ───────
         submissions = []
+
+        # HW1: all students submitted, only 2 graded by teacher
         for s in students:
             sub = Submission(
                 assignment_id=assignments_316[0].id,
                 student_id=s.id,
-                content="ER diagram submission content here.",
-                grade=round(75 + (hash(s.email) % 26), 2),
-                feedback="Good work on the ER diagram.",
+                content='{"text":"Here is my ER diagram for the university database. I identified the following entities: Student, Course, Instructor, Department, and Enrollment. Key relationships include students enrolling in courses (M:N) and instructors teaching courses (1:N).","attachments":[]}',
             )
             submissions.append(sub)
 
-        for s in students[:4]:
+        # Grade only first 2 submissions for HW1
+        db.session.add_all(submissions)
+        db.session.flush()
+
+        submissions[0].grade = 92
+        submissions[0].feedback = "Excellent work! Clear diagram with proper cardinalities."
+        submissions[1].grade = 85
+        submissions[1].feedback = "Good effort. Missing some constraints on the Department entity."
+
+        # HW2: only 3 students submitted, 1 graded
+        for s in students[:3]:
             sub = Submission(
                 assignment_id=assignments_316[1].id,
                 student_id=s.id,
-                content="Relational algebra answers.",
-                grade=round(80 + (hash(s.email) % 21), 2),
+                content='{"text":"Relational algebra solutions:\\n\\n(a) π_name(σ_bar=\\"James Joyce Pub\\"(frequents))\\n(b) π_name(σ_times_a_week=2(frequents ⋈_{drinker=name} drinkers))\\n(c) π_name(serves ⋈ σ_beer=\\"Amstel\\"(serves)) - π_name(serves ⋈ σ_beer=\\"Corona\\"(serves))","attachments":[]}',
             )
             submissions.append(sub)
 
-        db.session.add_all(submissions)
+        db.session.add_all(submissions[-3:])
+        db.session.flush()
+
+        submissions[-3].grade = 95
+        submissions[-3].feedback = "Perfect solutions. Well-formatted expressions."
+
         db.session.commit()
-        print(f"Created {len(submissions)} submissions")
+        print(f"Created {len(submissions)} submissions (3 graded, rest awaiting teacher review)")
         print("\nSeeding complete!")
         print("Default logins:")
         print("  admin@duke.edu / admin123")
         print("  teacher@duke.edu / teacher123")
         print("  student@duke.edu / student123")
+        print("  alice@duke.edu / student123")
+        print("  bob@duke.edu / student123")
 
 
 if __name__ == "__main__":
