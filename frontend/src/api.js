@@ -9,12 +9,9 @@ const api = axios.create({
 // Auth
 export const login = (email, password) =>
   api.post("/auth/login", { email, password });
-
 export const register = (name, email, password, role = "student") =>
   api.post("/auth/register", { name, email, password, role });
-
 export const logout = () => api.post("/auth/logout");
-
 export const getMe = () => api.get("/auth/me");
 
 // Courses
@@ -51,5 +48,11 @@ export const getMyGrades = () => api.get("/students/me/grades");
 // Stats
 export const getCourseStats = (courseId) =>
   api.get(`/courses/${courseId}/stats`);
+
+// Admin
+export const getUsers = () => api.get("/admin/users");
+export const updateUser = (id, data) => api.put(`/admin/users/${id}`, data);
+export const deleteUser = (id) => api.delete(`/admin/users/${id}`);
+export const getPlatformStats = () => api.get("/admin/stats");
 
 export default api;

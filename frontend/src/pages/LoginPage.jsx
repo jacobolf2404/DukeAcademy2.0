@@ -4,21 +4,17 @@ import { login, register } from "../api";
 
 export default function LoginPage({ setUser }) {
   const [isRegister, setIsRegister] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "student",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "student" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       let res;
       if (isRegister) {
@@ -29,18 +25,16 @@ export default function LoginPage({ setUser }) {
       setUser(res.data);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.error || "Something went wrong");
+      setError(err.response?.data?.error || "Connection failed. Is the backend running?");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <h1>{isRegister ? "Create Account" : "Welcome Back"}</h1>
-      <p className="subtitle">
-        {isRegister
-          ? "Sign up for DukeAcademy 2.0"
-          : "Sign in to DukeAcademy 2.0"}
-      </p>
+      <p className="subtitle">{isRegister ? "Sign up for DukeAcademy 2.0" : "Sign in to DukeAcademy 2.0"}</p>
 
       <div className="card">
         {error && <div className="alert alert-error">{error}</div>}
@@ -49,38 +43,18 @@ export default function LoginPage({ setUser }) {
           {isRegister && (
             <div className="form-group">
               <label>Full Name</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="Your full name"
-                required
-              />
+              <input name="name" value={form.name} onChange={handleChange} placeholder="Your full name" required />
             </div>
           )}
 
           <div className="form-group">
             <label>Email</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="you@duke.edu"
-              required
-            />
+            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@duke.edu" required />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
+            <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Enter your password" required minLength={3} />
           </div>
 
           {isRegister && (
@@ -93,19 +67,15 @@ export default function LoginPage({ setUser }) {
             </div>
           )}
 
-          <button
-            className="btn btn-primary"
-            type="submit"
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            {isRegister ? "Create Account" : "Sign In"}
+          <button className="btn btn-primary btn-block btn-lg" type="submit" disabled={loading}>
+            {loading ? "Please wait..." : isRegister ? "Create Account" : "Sign In"}
           </button>
         </form>
       </div>
 
       <div className="auth-toggle">
         {isRegister ? "Already have an account? " : "Don't have an account? "}
-        <a onClick={() => setIsRegister(!isRegister)}>
+        <a onClick={() => { setIsRegister(!isRegister); setError(""); }}>
           {isRegister ? "Sign in" : "Sign up"}
         </a>
       </div>
