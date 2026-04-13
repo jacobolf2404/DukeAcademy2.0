@@ -7,14 +7,12 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     bcrypt.init_app(app)
     cors.init_app(app, supports_credentials=True, origins=["*"])
 
-    # Login manager config
     login_manager.login_view = None
 
     @login_manager.user_loader
@@ -26,14 +24,9 @@ def create_app(config_class=Config):
     def unauthorized():
         return jsonify({"error": "Authentication required"}), 401
 
-    # Register blueprints
     from app.routes import (
-        auth_bp,
-        courses_bp,
-        enrollments_bp,
-        assignments_bp,
-        submissions_bp,
-        admin_bp,
+        auth_bp, courses_bp, enrollments_bp, assignments_bp,
+        submissions_bp, admin_bp, announcements_bp, dashboard_bp,
     )
 
     app.register_blueprint(auth_bp)
@@ -42,13 +35,15 @@ def create_app(config_class=Config):
     app.register_blueprint(assignments_bp)
     app.register_blueprint(submissions_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(announcements_bp)
+    app.register_blueprint(dashboard_bp)
 
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok"})
 
     with app.app_context():
-        from app.models import User, Course, Enrollment, Assignment, Submission  # noqa
+        from app.models import User, Course, Enrollment, Assignment, Submission, Announcement  # noqa
         db.create_all()
 
     return app

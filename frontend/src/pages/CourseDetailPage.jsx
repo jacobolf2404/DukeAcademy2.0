@@ -5,8 +5,10 @@ import {
   enroll, drop, getRoster, submitWork, getSubmissions, gradeSubmission,
   getCourseStats, getMyCourses,
 } from "../api";
+import { getAnnouncements, createAnnouncement, deleteAnnouncement, exportGradesUrl } from "../api";
 import SubmitModal from "../components/SubmitModal";
 import SubmissionViewer from "../components/SubmissionViewer";
+import { getAnnouncements, createAnnouncement, deleteAnnouncement, exportGradesUrl } from "../api";
 
 export default function CourseDetailPage({ user }) {
   const { id } = useParams();
@@ -26,15 +28,19 @@ export default function CourseDetailPage({ user }) {
   const [submissions, setSubmissions] = useState([]);
   const [gradeEdits, setGradeEdits] = useState({});
   const [expandedSubmission, setExpandedSubmission] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+  const [showAnnForm, setShowAnnForm] = useState(false);
+  const [annForm, setAnnForm] = useState({ title: "", body: "", pinned: false });
 
   const isTeacher = user.role === "admin" || (user.role === "teacher" && course?.teacher_id === user.id);
 
-  useEffect(() => { loadCourse(); loadAssignments(); }, [id]);
+  useEffect(() => { loadCourse(); loadAssignments(); loadAnnouncements(); }, [id]);
   useEffect(() => {
     if (user.role === "student") checkEnrollment();
     if (isTeacher && course) { loadRoster(); loadStats(); }
   }, [course]);
 
+  const loadAnnouncements = async () => { try { setAnnouncements((await getAnnouncements(id)).data); } catch {} };
   const loadCourse = async () => { try { setCourse((await getCourse(id)).data); } catch { navigate("/"); } };
   const loadAssignments = async () => { try { setAssignments((await getAssignments(id)).data); } catch {} };
   const checkEnrollment = async () => { try { const res = await getMyCourses(); setEnrolled(res.data.some((c) => c.id === parseInt(id))); } catch {} };
@@ -145,8 +151,12 @@ export default function CourseDetailPage({ user }) {
             <button className={`tab ${tab === "roster" ? "active" : ""}`} onClick={() => setTab("roster")}>Roster<span className="tab-badge">{roster.length}</span></button>
             <button className={`tab ${tab === "grading" ? "active" : ""}`} onClick={() => setTab("grading")}>Grading</button>
             <button className={`tab ${tab === "stats" ? "active" : ""}`} onClick={() => setTab("stats")}>Analytics</button>
+
           </>
         )}
+        <button className={`tab ${tab === "announcements" ? "active" : ""}`} onClick={() => setTab("announcements")}>
+          Announcements<span className="tab-badge">{announcements.length}</span>
+        </button>
       </div>
 
       {/* ── Assignments Tab ── */}
@@ -343,6 +353,55 @@ export default function CourseDetailPage({ user }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Announcements Tab ── */}
+      {tab === "announcements" && (
+        <div>
+          {isTeacher && (
+            <div style={{ marginBottom: "1rem" }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAnnForm(!showAnnForm)}>
+                {showAnnForm ? "Cancel" : "+ New Announcement"}
+              </button>
+            </div>
+          )}
+          {showAnnForm && (
+            <div className="card" style={{ marginBottom: "1rem" }}>
+              <div className="form-group"><label>Title</label><input value={annForm.title} onChange={(e) => setAnnForm({ ...annForm, title: e.target.value })} placeholder="Announcement title" /></div>
+              <div className="form-group"><label>Message</label><textarea value={annForm.body} onChange={(e) => setAnnForm({ ...annForm, body: e.target.value })} rows={3} placeholder="Announcement body..." /></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem" }}>
+                  <input type="checkbox" checked={annForm.pinned} onChange={(e) => setAnnForm({ ...annForm, pinned: e.target.checked })} /> Pin to top
+                </label>
+                <button className="btn btn-success btn-sm" onClick={async () => {
+                  try { await createAnnouncement(id, annForm); setAnnForm({ title: "", body: "", pinned: false }); setShowAnnForm(false); loadAnnouncements(); flash("Announcement posted!"); }
+                  catch (err) { flash(err.response?.data?.error || "Failed", "error"); }
+                }}>Post</button>
+              </div>
+            </div>
+          )}
+          {announcements.length === 0 ? (
+            <div className="empty-state"><div className="empty-icon">&#128227;</div><h3>No announcements</h3></div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {announcements.map((a) => (
+                <div key={a.id} className="card" style={{ padding: "1rem 1.25rem", borderLeft: a.pinned ? "3px solid var(--duke-blue)" : undefined }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <strong>{a.title}</strong>
+                        {a.pinned && <span className="badge" style={{ background: "var(--accent-light)", color: "var(--accent)" }}>Pinned</span>}
+                      </div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--gray-400)", marginTop: "0.15rem" }}>{a.author_name} &middot; {new Date(a.created_at).toLocaleDateString()}</div>
+                    </div>
+                    {isTeacher && <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={async () => { await deleteAnnouncement(a.id); loadAnnouncements(); }}>Delete</button>}
+                  </div>
+                  <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "var(--gray-700)", lineHeight: 1.6 }}>{a.body}</p>
+                </div>
+              ))}
             </div>
           )}
         </div>

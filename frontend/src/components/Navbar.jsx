@@ -12,7 +12,6 @@ export default function Navbar({ user, setUser }) {
   };
 
   if (!user) return null;
-
   const isActive = (path) => location.pathname === path ? "active" : "";
 
   return (
@@ -21,29 +20,32 @@ export default function Navbar({ user, setUser }) {
         <span className="navbar-brand-icon">DA</span>
         DukeAcademy 2.0
       </Link>
-
       <div className="navbar-links">
-        <Link to="/" className={isActive("/")}>Courses</Link>
         {user.role === "student" && (
           <>
+            <Link to="/" className={isActive("/")}>Dashboard</Link>
+            <Link to="/courses" className={isActive("/courses")}>Catalog</Link>
             <Link to="/my-courses" className={isActive("/my-courses")}>My Courses</Link>
             <Link to="/grades" className={isActive("/grades")}>Grades</Link>
           </>
         )}
         {user.role === "teacher" && (
-          <Link to="/my-courses" className={isActive("/my-courses")}>My Courses</Link>
+          <>
+            <Link to="/" className={isActive("/")}>Courses</Link>
+            <Link to="/my-courses" className={isActive("/my-courses")}>My Courses</Link>
+          </>
         )}
         {user.role === "admin" && (
-          <Link to="/admin" className={isActive("/admin")}>Admin Panel</Link>
+          <>
+            <Link to="/" className={isActive("/")}>Courses</Link>
+            <Link to="/admin" className={isActive("/admin")}>Admin Panel</Link>
+          </>
         )}
       </div>
-
       <div className="navbar-user">
         <span>{user.name}</span>
         <span className={`role-badge ${user.role}`}>{user.role}</span>
-        <button className="btn btn-outline btn-sm" onClick={handleLogout}>
-          Log Out
-        </button>
+        <button className="btn btn-outline btn-sm" onClick={handleLogout}>Log Out</button>
       </div>
     </nav>
   );

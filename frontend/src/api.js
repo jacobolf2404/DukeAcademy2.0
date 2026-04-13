@@ -1,16 +1,9 @@
 import axios from "axios";
-
-const api = axios.create({
-  baseURL: "/api",
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
-});
+const api = axios.create({ baseURL: "/api", withCredentials: true, headers: { "Content-Type": "application/json" } });
 
 // Auth
-export const login = (email, password) =>
-  api.post("/auth/login", { email, password });
-export const register = (name, email, password, role = "student") =>
-  api.post("/auth/register", { name, email, password, role });
+export const login = (email, password) => api.post("/auth/login", { email, password });
+export const register = (name, email, password, role = "student") => api.post("/auth/register", { name, email, password, role });
 export const logout = () => api.post("/auth/logout");
 export const getMe = () => api.get("/auth/me");
 
@@ -28,31 +21,35 @@ export const getRoster = (courseId) => api.get(`/courses/${courseId}/roster`);
 export const getMyCourses = () => api.get("/courses/my-courses");
 
 // Assignments
-export const getAssignments = (courseId) =>
-  api.get(`/courses/${courseId}/assignments`);
-export const createAssignment = (courseId, data) =>
-  api.post(`/courses/${courseId}/assignments`, data);
-export const updateAssignment = (id, data) =>
-  api.put(`/assignments/${id}`, data);
+export const getAssignments = (courseId) => api.get(`/courses/${courseId}/assignments`);
+export const createAssignment = (courseId, data) => api.post(`/courses/${courseId}/assignments`, data);
+export const updateAssignment = (id, data) => api.put(`/assignments/${id}`, data);
 export const deleteAssignment = (id) => api.delete(`/assignments/${id}`);
 
 // Submissions
-export const submitWork = (assignmentId, content) =>
-  api.post(`/assignments/${assignmentId}/submit`, { content });
-export const getSubmissions = (assignmentId) =>
-  api.get(`/assignments/${assignmentId}/submissions`);
-export const gradeSubmission = (submissionId, grade, feedback) =>
-  api.put(`/submissions/${submissionId}/grade`, { grade, feedback });
+export const submitWork = (assignmentId, content) => api.post(`/assignments/${assignmentId}/submit`, { content });
+export const getSubmissions = (assignmentId) => api.get(`/assignments/${assignmentId}/submissions`);
+export const gradeSubmission = (submissionId, grade, feedback) => api.put(`/submissions/${submissionId}/grade`, { grade, feedback });
 export const getMyGrades = () => api.get("/students/me/grades");
 
 // Stats
-export const getCourseStats = (courseId) =>
-  api.get(`/courses/${courseId}/stats`);
+export const getCourseStats = (courseId) => api.get(`/courses/${courseId}/stats`);
 
 // Admin
 export const getUsers = () => api.get("/admin/users");
 export const updateUser = (id, data) => api.put(`/admin/users/${id}`, data);
 export const deleteUser = (id) => api.delete(`/admin/users/${id}`);
 export const getPlatformStats = () => api.get("/admin/stats");
+
+// Announcements
+export const getAnnouncements = (courseId) => api.get(`/courses/${courseId}/announcements`);
+export const createAnnouncement = (courseId, data) => api.post(`/courses/${courseId}/announcements`, data);
+export const deleteAnnouncement = (id) => api.delete(`/announcements/${id}`);
+
+// Dashboard
+export const getDashboard = () => api.get("/dashboard");
+
+// Export
+export const exportGradesUrl = (courseId) => `/api/courses/${courseId}/export-grades`;
 
 export default api;

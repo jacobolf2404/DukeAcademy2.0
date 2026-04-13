@@ -4,6 +4,7 @@ import { getMe } from "./api";
 import Navbar from "./components/Navbar";
 import ChatBot from "./components/ChatBot";
 import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
 import CoursesPage from "./pages/CoursesPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import MyCoursesPage from "./pages/MyCoursesPage";
@@ -15,35 +16,24 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMe()
-      .then((res) => setUser(res.data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    getMe().then((res) => setUser(res.data)).catch(() => setUser(null)).finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", color: "var(--gray-500)", flexDirection: "column", gap: "0.75rem" }}>
-        <div className="loading-spinner" />
-        <div style={{ fontWeight: 500 }}>Loading DukeAcademy 2.0...</div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", color: "var(--gray-500)", flexDirection: "column", gap: "0.75rem" }}>
+      <div className="loading-spinner" /><div style={{ fontWeight: 500 }}>Loading DukeAcademy 2.0...</div>
+    </div>
+  );
 
-  if (!user) {
-    return (
-      <div className="app-container">
-        <LoginPage setUser={setUser} />
-      </div>
-    );
-  }
+  if (!user) return <div className="app-container"><LoginPage setUser={setUser} /></div>;
 
   return (
     <div className="app-container">
       <Navbar user={user} setUser={setUser} />
       <div className="main-content">
         <Routes>
-          <Route path="/" element={<CoursesPage user={user} />} />
+          <Route path="/" element={user.role === "student" ? <DashboardPage user={user} /> : <CoursesPage user={user} />} />
+          <Route path="/courses" element={<CoursesPage user={user} />} />
           <Route path="/courses/:id" element={<CourseDetailPage user={user} />} />
           <Route path="/my-courses" element={<MyCoursesPage user={user} />} />
           <Route path="/grades" element={<GradesPage />} />

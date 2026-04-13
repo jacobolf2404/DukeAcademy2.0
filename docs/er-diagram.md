@@ -10,7 +10,6 @@ erDiagram
         varchar role
         timestamp created_at
     }
-
     COURSES {
         int id PK
         varchar title
@@ -18,13 +17,11 @@ erDiagram
         int teacher_id FK
         timestamp created_at
     }
-
     ENROLLMENTS {
         int student_id PK,FK
         int course_id PK,FK
         timestamp enrolled_at
     }
-
     ASSIGNMENTS {
         int id PK
         int course_id FK
@@ -34,7 +31,6 @@ erDiagram
         numeric max_points
         timestamp created_at
     }
-
     SUBMISSIONS {
         int id PK
         int assignment_id FK
@@ -44,11 +40,22 @@ erDiagram
         numeric grade
         text feedback
     }
+    ANNOUNCEMENTS {
+        int id PK
+        int course_id FK
+        int author_id FK
+        varchar title
+        text body
+        boolean pinned
+        timestamp created_at
+    }
 
-    USERS ||--o{ COURSES      : "teaches"
-    USERS ||--o{ ENROLLMENTS  : "enrolls in"
-    COURSES ||--o{ ENROLLMENTS : "has"
-    COURSES ||--o{ ASSIGNMENTS : "contains"
+    USERS ||--o{ COURSES       : "teaches"
+    USERS ||--o{ ENROLLMENTS   : "enrolls in"
+    COURSES ||--o{ ENROLLMENTS  : "has"
+    COURSES ||--o{ ASSIGNMENTS  : "contains"
+    COURSES ||--o{ ANNOUNCEMENTS : "has"
     ASSIGNMENTS ||--o{ SUBMISSIONS : "receives"
-    USERS ||--o{ SUBMISSIONS  : "submits"
+    USERS ||--o{ SUBMISSIONS   : "submits"
+    USERS ||--o{ ANNOUNCEMENTS : "authors"
 ```
