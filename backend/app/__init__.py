@@ -27,6 +27,7 @@ def create_app(config_class=Config):
     from app.routes import (
         auth_bp, courses_bp, enrollments_bp, assignments_bp,
         submissions_bp, admin_bp, announcements_bp, dashboard_bp,
+        chat_bp,
     )
 
     app.register_blueprint(auth_bp)
@@ -37,13 +38,14 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp)
     app.register_blueprint(announcements_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(chat_bp)
 
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok"})
 
     with app.app_context():
-        from app.models import User, Course, Enrollment, Assignment, Submission, Announcement  # noqa
+        from app.models import User, Course, Enrollment, Assignment, Submission, Announcement
         db.create_all()
 
     return app

@@ -24,6 +24,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-dukeacademy}:${POSTGRES_PASSWORD:-dukeacademy316}@db:5432/${POSTGRES_DB:-dukeacademy2}
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       FLASK_ENV: ${FLASK_ENV:-development}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      MAILERSEND_API_KEY: ${MAILERSEND_API_KEY:-}
+      MAILERSEND_FROM_EMAIL: ${MAILERSEND_FROM_EMAIL:-noreply@trial-0p7kx4xjz7og9yjr.mlsender.net}
     ports:
       - "5001:5000"
     volumes:
